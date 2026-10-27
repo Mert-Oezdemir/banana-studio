@@ -10,10 +10,12 @@ type Ticket = {
  * across tabs/users; only an explicit pre-provider refusal can defer a ticket. */
 export const createImageGenerationQueue = ({
   concurrency = 8,
+  maxPending = 100,
   now = () => Date.now(),
   sleep = (milliseconds: number) => new Promise<void>(resolve => setTimeout(resolve, milliseconds)),
 } = {}) => {
   if (!Number.isInteger(concurrency) || concurrency < 1) throw new Error('Image concurrency must be a positive integer.');
+  if (!Number.isSafeInteger(maxPending) || maxPending < concurrency) throw new Error('Image queue limit must cover active generations.');
   const jobs = new Map<string, { promise: Promise<unknown>; stage: ImageSubmissionStage; listeners: Set<(stage: ImageSubmissionStage) => void> }>();
   const waiting: (() => void)[] = [];
   const cooldowns = new Map<string, number>();
@@ -29,6 +31,7 @@ export const createImageGenerationQueue = ({
         if (onStage) { existing.listeners.add(onStage); onStage(existing.stage); }
         return existing.promise as Promise<T>;
       }
+      if (jobs.size >= maxPending) return Promise.reject(new Error('Too many pending image generations. Wait for existing jobs to finish.'));
       let resolve!: (result: T) => void, reject!: (error: unknown) => void;
       const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
       const job = { promise, stage: 'queued' as ImageSubmissionStage, listeners: new Set(onStage ? [onStage] : []) };
