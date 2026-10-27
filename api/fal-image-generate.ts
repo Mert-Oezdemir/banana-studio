@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { applyCors, requireUser } from './_lib/auth.js';
 import { prepareTaskRegistry, registerProviderTask } from './_lib/providerTasks.js';
 import { getNanoBanana21InputError, NANO_BANANA_21_ENDPOINT } from '../src/lib/images/nanoBanana21.js';
+import { validateFalImageSubmission } from './_lib/falImageLimits.js';
 
 const FAL_QUEUE_BASE = 'https://queue.fal.run';
 
@@ -102,6 +103,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!input.prompt || typeof input.prompt !== 'string' || !input.prompt.trim()) {
     return res.status(400).json({ error: 'prompt is required' });
   }
+
+  const safetyError = validateFalImageSubmission(endpoint, input);
+  if (safetyError) return res.status(400).json({ error: safetyError });
 
   if (endpoint === NANO_BANANA_21_ENDPOINT || endpoint === `${NANO_BANANA_21_ENDPOINT}/edit`) {
     const error = getNanoBanana21InputError(input, endpoint.endsWith('/edit'));
