@@ -108,6 +108,19 @@ MiniMax H3 Max modes: **Text to Video Max · Image to Video Max · Reference to 
 
 **Desktop quick start:** download → unzip → open (Mac: move to Applications first) → **Provider keys** → add the key for your model → generate. Both standalone apps need **no Supabase, Vercel, Google sign-in or separate Node installation**. The gallery stays on your computer. API keys stay in macOS Keychain or Windows Credential Manager. Keep the app open while jobs run; minimizing is fine. [First-open permissions, updates and backups →](docs/en/desktop.md)
 
+## Safer paid-image submissions
+
+The web API now checks fal.ai image submissions **before** an external paid
+request. A single request can create at most four images; the request must
+remain asynchronous/recoverable, and Nano Banana Pro uses the provider's
+single-round generation limit. The browser queue also caps its outstanding
+unique jobs to 100, while duplicate submissions reuse the same promise.
+
+These are *per-request and browser-queue safety controls*, not a monthly
+budget or guaranteed dollar ceiling. Token-based input, reference, reasoning
+and retry charges depend on the provider; review its billing dashboard before
+running large workloads. Invalid requests are rejected before provider calls.
+
 ## Models and API keys
 
 An API key is a private credential that lets the app use your account with an AI provider. Add only the providers you plan to use. These are the routes implemented **in this app**, not a list of every service offering each model.
