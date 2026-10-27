@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { OPENROUTER_MODELS, type AIProvider } from '../../src/lib/providers.js';
 import { providerImageData } from './providerMedia.js';
+import { validateFalImageSubmission } from './falImageLimits.js';
 
 export const imageProviderModel = (provider: AIProvider, model: string, references: boolean): string => provider === 'openrouter'
   ? OPENROUTER_MODELS[model] : provider === 'fal'
@@ -35,6 +36,8 @@ export async function requestImage(provider: AIProvider, model: string, input: R
       ...(input.images?.length ? { image_urls: input.images.map((image: any) => image.image_url) } : {}),
     } : { prompt: input.prompt, aspect_ratio: input.aspect_ratio, resolution: input.resolution, num_images: 1, output_format: 'png', sync_mode: true, ...(model === 'gemini-nano-banana-2.1' ? { thinking_level: 'high' } : {}), ...(input.images?.length ? { image_urls: input.images.map((image: any) => image.image_url) } : {}) };
     const endpoint = imageProviderModel(provider, model, !!input.images?.length);
+    const admissionError = validateFalImageSubmission(endpoint, body, { allowSynchronous: true });
+    if (admissionError) throw new Error(admissionError);
     const response = await fetch(`https://fal.run/${endpoint}`, {
       method: 'POST', redirect: 'error', signal, headers: { Authorization: `Key ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     });
