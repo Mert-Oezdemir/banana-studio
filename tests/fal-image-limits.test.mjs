@@ -19,6 +19,15 @@ test('image guard bounds paid output count before provider submission', () => {
   }
 });
 
+test('durable internal workers may use synchronous output without bypassing billable limits', () => {
+  assert.equal(validateFalImageSubmission(nano, { prompt: 'ok', sync_mode: true }, { allowSynchronous: true }), null);
+  assert.match(validateFalImageSubmission(nano, { prompt: 'ok', sync_mode: true }), /recovered/);
+  assert.match(validateFalImageSubmission(nano, { prompt: 'ok', num_images: 5, sync_mode: true }, { allowSynchronous: true }), /1 and 4/);
+  const internal = { prompt: 'ok', num_images: 1, sync_mode: true };
+  assert.equal(validateFalImageSubmission(pro, internal, { allowSynchronous: true }), null);
+  assert.equal(internal.limit_generations, true);
+});
+
 test('image guard requires recoverable async jobs and bounded generation rounds', () => {
   for (const endpoint of [pro, nano]) {
     assert.match(validateFalImageSubmission(endpoint, { prompt: 'ok', sync_mode: true }), /recovered/);
